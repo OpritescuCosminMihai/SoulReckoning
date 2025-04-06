@@ -30,3 +30,23 @@
 *.exe
 *.out
 *.app
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Build
+*.exe
+*.obj
+*.pdb
+*.ilk
+*.log
+
+# SDL Cache
+*.dll
+*.cache
+
+# Backup files
+*~
+*.tmp
