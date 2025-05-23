@@ -17,6 +17,14 @@ bool Renderer::init() {
         return false;
     }
 
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+        std::cerr << "Eroare la Mix_OpenAudio: " << Mix_GetError() << std::endl;
+        return false;
+    }
+    else {
+        std::cout << "[OK] Mix_OpenAudio a fost apelat cu succes.\n";
+    }
+
     window = SDL_CreateWindow("Soul Reckoning", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
         1280, 720, SDL_WINDOW_SHOWN);
     if (!window) {
@@ -36,6 +44,7 @@ bool Renderer::init() {
 void Renderer::clear() {
     SDL_SetRenderDrawColor(sdlRenderer, 0, 0, 0, 255);
     SDL_RenderClear(sdlRenderer);
+    Mix_CloseAudio();
 }
 
 void Renderer::present() {

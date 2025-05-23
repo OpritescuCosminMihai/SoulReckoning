@@ -1,6 +1,8 @@
 ﻿// main.cpp
 #include <SDL.h>
 #include <SDL_ttf.h>
+#include <SDL_image.h>
+#include <SDL_mixer.h>
 #include <vector>
 #include "Globals.h"
 #include "Renderer.h"
@@ -10,6 +12,7 @@
 #include "ResourceManager.h"
 #include "Background.h"
 #include "HUD.h"
+#include "MainMenu.h"
 
 int main(int argc, char* argv[]) {
     Renderer renderer;
@@ -18,6 +21,16 @@ int main(int argc, char* argv[]) {
     // Font pentru HUD
     TTF_Font* font = TTF_OpenFont("D:\\PlatformerGame\\Fonts\\PressStart2P-Regular.ttf", 24);
     if (!font) {
+        std::cerr << "Eroare font: " << TTF_GetError() << std::endl;
+        return -1;
+    }
+    TTF_Font* titleFont = TTF_OpenFont("D:\\PlatformerGame\\Fonts\\JAPAN-Bold-Italic.ttf", 60); // pentru logo
+    if (!titleFont) {
+        std::cerr << "Eroare font: " << TTF_GetError() << std::endl;
+        return -1;
+    }
+    TTF_Font* optionsFont = TTF_OpenFont("D:\\PlatformerGame\\Fonts\\JAPAN-Italic.ttf", 40); // pentru butoane
+    if (!optionsFont) {
         std::cerr << "Eroare font: " << TTF_GetError() << std::endl;
         return -1;
     }
@@ -66,10 +79,45 @@ int main(int argc, char* argv[]) {
     int playerHealth = 100;
     int score = 0;
 
+    MainMenu menu;
+    menu.loadAssets(renderer.sdlRenderer);
+    bool inMenu = true;
+    bool shouldStartGame = false;
+    bool shouldQuit = false;
+
+    Uint32 lastTime = SDL_GetTicks();
+
+    while (inMenu) {
+        Uint32 currentTime = SDL_GetTicks();
+        float deltaTime = (currentTime - lastTime) / 1000.0f;
+        lastTime = currentTime;
+
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                shouldQuit = true;
+                inMenu = false;
+            }
+            menu.handleInput(event, shouldStartGame, shouldQuit);
+        }
+
+        if (shouldStartGame) {
+            inMenu = false;
+        }
+        if (shouldQuit) {
+            renderer.close();
+            return 0;
+        }
+
+        menu.render(renderer.sdlRenderer, optionsFont);
+        renderer.present();
+    }
+
     // Main loop
     bool running = true;
+    bool isPaused = false;
+    int pauseSelected = 0; // 0 = Resume, 1 = Exit
     SDL_Event event;
-    Uint32 lastTime = SDL_GetTicks();
 
     while (running) {
         Uint32 now = SDL_GetTicks();
@@ -78,59 +126,104 @@ int main(int argc, char* argv[]) {
 
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) running = false;
-        }
 
-        const Uint8* keystate = SDL_GetKeyboardState(NULL);
-        player.handleInput(keystate, deltaTime);
-        player.update(deltaTime, platforms);
+            // ESC funcționează mereu
+            if (event.type == SDL_KEYDOWN) {
+                if (event.key.keysym.sym == SDLK_ESCAPE) {
+                    isPaused = !isPaused;
+                }
 
-        for (auto& enemy : enemies)
-            enemy.update(deltaTime, player.x);
-
-        // Atac
-        if (player.currentState == PlayerState::ATTACK &&
-            player.currentFrame == 1 &&
-            !player.attackDamageApplied) {
-            SDL_Rect hitbox = player.getAttackHitbox();
-            for (auto& enemy : enemies) {
-                if (SDL_HasIntersection(&hitbox, &enemy.rect)) {
-                    enemy.health -= 50;
-                    std::cout << "Inamic lovit! HP: " << enemy.health << std::endl;
-                    if (enemy.health <= 0) {
-                        score += 100;
-                        enemy.setState(EnemyState::DEAD);
+                // Restul se execută doar dacă e în pauză
+                if (isPaused) {
+                    if (event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_DOWN) {
+                        pauseSelected = 1 - pauseSelected;
                     }
-                    else {
-                        enemy.setState(EnemyState::HURT);
+
+                    if (event.key.keysym.sym == SDLK_RETURN || event.key.keysym.sym == SDLK_KP_ENTER) {
+                        if (pauseSelected == 0) {
+                            isPaused = false;
+                        }
+                        else {
+                            running = false;
+                        }
                     }
                 }
             }
-            player.attackDamageApplied = true;
         }
 
-        enemies.erase(std::remove_if(enemies.begin(), enemies.end(),
-            [](const Enemy& e) { return e.health <= 0; }), enemies.end());
+        const Uint8* keystate = SDL_GetKeyboardState(NULL);
+        if (!isPaused) {
+            player.handleInput(keystate, deltaTime);
+            player.update(deltaTime, platforms);
 
-        int cameraX = static_cast<int>(player.x) - SCREEN_WIDTH / 2;
+            for (auto& enemy : enemies)
+                enemy.update(deltaTime, player.x);
 
-        // Randare
-        renderer.clear();
-        background.render(renderer.sdlRenderer, cameraX, 0);
+            // Atac
+            if (player.currentState == PlayerState::ATTACK &&
+                player.currentFrame == 1 &&
+                !player.attackDamageApplied) {
+                SDL_Rect hitbox = player.getAttackHitbox();
+                for (auto& enemy : enemies) {
+                    if (SDL_HasIntersection(&hitbox, &enemy.rect)) {
+                        enemy.health -= 50;
+                        std::cout << "Inamic lovit! HP: " << enemy.health << std::endl;
+                        if (enemy.health <= 0) {
+                            score += 100;
+                            enemy.setState(EnemyState::DEAD);
+                        }
+                        else {
+                            enemy.setState(EnemyState::HURT);
+                        }
+                    }
+                }
+                player.attackDamageApplied = true;
+            }
 
-        for (auto& p : platforms)
-            p.render(renderer.sdlRenderer, cameraX);
+            enemies.erase(std::remove_if(enemies.begin(), enemies.end(),
+                [](const Enemy& e) { return e.health <= 0; }), enemies.end());
 
-        for (auto& e : enemies)
-            e.render(renderer.sdlRenderer, cameraX);
+            int cameraX = static_cast<int>(player.x) - SCREEN_WIDTH / 2;
 
-        player.render(renderer.sdlRenderer, cameraX);
+            // Randare
+            renderer.clear();
+            background.render(renderer.sdlRenderer, cameraX, 0);
+            for (auto& p : platforms) p.render(renderer.sdlRenderer, cameraX);
+            for (auto& e : enemies) e.render(renderer.sdlRenderer, cameraX);
+            player.render(renderer.sdlRenderer, cameraX);
+            renderHUD(renderer.sdlRenderer, font, playerHealth, score);
+        } else {
+            // Fundal blurat sau overlay semi-transparent
+            SDL_SetRenderDrawBlendMode(renderer.sdlRenderer, SDL_BLENDMODE_BLEND);
+            SDL_SetRenderDrawColor(renderer.sdlRenderer, 0, 0, 0, 160); // semi-transparent negru
+            SDL_Rect overlay = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
+            SDL_RenderFillRect(renderer.sdlRenderer, &overlay);
 
-        renderHUD(renderer.sdlRenderer, font, playerHealth, score);
+            // Text: Resume / Exit
+            const char* options[2] = { "Resume", "Exit to Menu" };
+            int y = 250;
+            for (int i = 0; i < 2; ++i) {
+                SDL_Color color = (i == pauseSelected) ? SDL_Color{ 255, 255, 0, 255 } : SDL_Color{ 255, 0, 0, 255 };
+                SDL_Surface* surface = TTF_RenderText_Solid(optionsFont, options[i], color);
+                SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer.sdlRenderer, surface);
+
+                int textW, textH;
+                SDL_QueryTexture(texture, nullptr, nullptr, &textW, &textH);
+                SDL_Rect dst = { SCREEN_WIDTH / 2 - textW / 2, y, textW, textH };
+
+                SDL_RenderCopy(renderer.sdlRenderer, texture, nullptr, &dst);
+                SDL_FreeSurface(surface);
+                SDL_DestroyTexture(texture);
+                y += 80;
+            }
+        }
         renderer.present();
     }
 
     background.free();
     TTF_CloseFont(font);
+    TTF_CloseFont(titleFont);
+    TTF_CloseFont(optionsFont);
     renderer.close();
     return 0;
 }

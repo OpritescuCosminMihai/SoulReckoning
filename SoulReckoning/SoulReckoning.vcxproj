@@ -107,13 +107,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>D:\SDL2\SDL2-2.32.2\include;D:\SDL2\SDL2-image\SDL2_image-2.8.8\include;D:\SDL2\SDL2-ttf\SDL2_ttf-2.24.0\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\SDL2\SDL2-2.32.2\include;D:\SDL2\SDL2-image\SDL2_image-2.8.8\include;D:\SDL2\SDL2-ttf\SDL2_ttf-2.24.0\include;D:\SDL2\SDL2-mixer\SDL2_mixer-2.8.1\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>D:\SDL2\SDL2-2.32.2\lib\x64;D:\SDL2\SDL2-image\SDL2_image-2.8.8\lib\x64;D:\SDL2\SDL2-ttf\SDL2_ttf-2.24.0\lib\x64</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;SDL2_ttf.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>D:\SDL2\SDL2-2.32.2\lib\x64;D:\SDL2\SDL2-image\SDL2_image-2.8.8\lib\x64;D:\SDL2\SDL2-ttf\SDL2_ttf-2.24.0\lib\x64;D:\SDL2\SDL2-mixer\SDL2_mixer-2.8.1\lib\x64</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;SDL2_ttf.lib;SDL2_mixer.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -136,6 +136,7 @@
     <ClCompile Include="Background.cpp" />
     <ClCompile Include="Enemy.cpp" />
     <ClCompile Include="HUD.cpp" />
+    <ClCompile Include="MainMenu.cpp" />
     <ClCompile Include="Platform.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="Renderer.cpp" />
@@ -148,6 +149,7 @@
     <ClInclude Include="Enemy.h" />
     <ClInclude Include="Globals.h" />
     <ClInclude Include="HUD.h" />
+    <ClInclude Include="MainMenu.h" />
     <ClInclude Include="Platform.h" />
     <ClInclude Include="PlatformerGame.h" />
     <ClInclude Include="Player.h" />
