@@ -79,6 +79,11 @@ int main(int argc, char* argv[]) {
     int playerHealth = 100;
     int score = 0;
 
+    int cameraShakeTimer = 0;     // câte frame-uri mai tremură camera
+    int cameraShakeStrength = 30; // câți pixeli se deplasează camera la shake
+
+    int hitFlashTimer = 0; // câte frame-uri mai afișăm flashul
+
     MainMenu menu;
     menu.loadAssets(renderer.sdlRenderer);
     bool inMenu = true;
@@ -166,6 +171,8 @@ int main(int argc, char* argv[]) {
                 SDL_Rect hitbox = player.getAttackHitbox();
                 for (auto& enemy : enemies) {
                     if (SDL_HasIntersection(&hitbox, &enemy.rect)) {
+                        hitFlashTimer = 50; // flash timp de 5 frame-uri (~0.08 sec)
+                        cameraShakeTimer = 100; // shake pentru 10 frame-uri (~0.15 secunde)
                         enemy.health -= 50;
                         std::cout << "Inamic lovit! HP: " << enemy.health << std::endl;
                         if (enemy.health <= 0) {
@@ -184,6 +191,13 @@ int main(int argc, char* argv[]) {
                 [](const Enemy& e) { return e.health <= 0; }), enemies.end());
 
             int cameraX = static_cast<int>(player.x) - SCREEN_WIDTH / 2;
+
+            // Aplică shake dacă activ
+            if (cameraShakeTimer > 0) {
+                int offset = (rand() % (2 * cameraShakeStrength + 1)) - cameraShakeStrength; // între -10 și +10
+                cameraX += offset;
+                cameraShakeTimer--;
+            }
 
             // Randare
             renderer.clear();
@@ -216,6 +230,18 @@ int main(int argc, char* argv[]) {
                 SDL_DestroyTexture(texture);
                 y += 80;
             }
+        }
+        if (hitFlashTimer > 0) {
+            SDL_SetRenderDrawBlendMode(renderer.sdlRenderer, SDL_BLENDMODE_BLEND);
+
+            // Calculează alpha în funcție de frame
+            int alpha = static_cast<int>((hitFlashTimer / 5.0f) * 100.0f); // 100 → 80 → 60...
+
+            SDL_SetRenderDrawColor(renderer.sdlRenderer, 255, 0, 0, alpha); // alb cu alpha
+            SDL_Rect flashRect = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
+            SDL_RenderFillRect(renderer.sdlRenderer, &flashRect);
+
+            hitFlashTimer--;
         }
         renderer.present();
     }
