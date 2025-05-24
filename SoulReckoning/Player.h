@@ -32,5 +32,7 @@ public:
     void updateAnimation(float deltaTime);
     SDL_Rect getAttackHitbox();
     void render(SDL_Renderer* renderer, int cameraX);
+    void reset();
+    SDL_Rect getCollider() const;
 };
 

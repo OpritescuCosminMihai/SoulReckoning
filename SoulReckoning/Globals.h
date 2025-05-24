@@ -18,7 +18,7 @@ const float ENEMY_ATTACK_RANGE = 50.0f;
 
 // Enum-uri globale
 enum class PlayerState {
-    STAND, WALK, RUN, JUMP, CROUCH, ATTACK
+    STAND, WALK, RUN, JUMP, CROUCH, ATTACK, DEAD
 };
 
 enum class EnemyState {

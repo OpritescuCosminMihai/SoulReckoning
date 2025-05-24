@@ -1,4 +1,4 @@
-// Player.cpp
+﻿// Player.cpp
 #include "Player.h"
 #include "ResourceManager.h"
 #include "AnimationData.h"
@@ -65,8 +65,17 @@ void Player::loadAnimations(SDL_Renderer* renderer) {
     attack.frameWidth = 170;
     attack.frameHeight = 100;
     attack.totalFrames = 3;
-    attack.animationSpeed = 0.34f;
+    attack.animationSpeed = 0.16f;
     animations[PlayerState::ATTACK] = attack;
+
+    // DEAD
+    AnimationData dead;
+    dead.texture = ResourceManager::getTexture(renderer, "D:\\PlatformerGame\\Character\\player_hurt.png"); // TEMP
+    dead.frameWidth = 90;    // la fel ca STAND
+    dead.frameHeight = 90;
+    dead.totalFrames = 3;     // o singură imagine
+    dead.animationSpeed = 0.2f;
+    animations[PlayerState::DEAD] = dead;
 }
 
 void Player::setState(PlayerState newState) {
@@ -150,13 +159,22 @@ void Player::update(float deltaTime, const std::vector<Platform>& platforms) {
 void Player::updateAnimation(float deltaTime) {
     AnimationData& anim = animations[currentState];
     animationTimer += deltaTime;
-    if (animationTimer >= anim.animationSpeed) {
-        currentFrame = (currentFrame + 1) % anim.totalFrames;
-        animationTimer = 0.0f;
 
-        if (currentState == PlayerState::ATTACK && currentFrame == 0) {
-            setState(PlayerState::STAND);
+    if (animationTimer >= anim.animationSpeed) {
+        if (currentState == PlayerState::DEAD) {
+            // Nu repornim de la 0
+            if (currentFrame < anim.totalFrames - 1) {
+                currentFrame++;
+            }
         }
+        else {
+            currentFrame = (currentFrame + 1) % anim.totalFrames;
+
+            if (currentState == PlayerState::ATTACK && currentFrame == 0) {
+                setState(PlayerState::STAND);
+            }
+        }
+        animationTimer = 0.0f;
     }
 }
 
@@ -182,4 +200,18 @@ void Player::render(SDL_Renderer* renderer, int cameraX) {
     SDL_Rect dst = { rect.x - cameraX, rect.y, width, height };
     SDL_RendererFlip flip = facingRight ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
     SDL_RenderCopyEx(renderer, anim.texture, &src, &dst, 0, nullptr, flip);
+}
+
+void Player::reset() {
+    x = 100;
+    y = 500;
+    velocityY = 0;
+    currentState = PlayerState::STAND;
+    attackDamageApplied = false;
+    currentFrame = 0;
+    animationTimer = 0.0f;
+}
+
+SDL_Rect Player::getCollider() const {
+    return SDL_Rect{ static_cast<int>(x), static_cast<int>(y), width, height };
 }
