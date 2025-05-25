@@ -1,4 +1,4 @@
-// Enemy.cpp
+﻿// Enemy.cpp
 #include "Enemy.h"
 
 Enemy::Enemy(float startX, float startY, int w, int h)
@@ -38,51 +38,113 @@ void Enemy::setState(EnemyState newState) {
 }
 
 void Enemy::update(float deltaTime, float playerX) {
+    float distance = playerX - x;
+    float absDistance = fabs(distance);
+
+    // 📌 Dacă e mort, joacă animatia și rămâne pe ultimul frame
+    if (currentState == EnemyState::DEAD) {
+        AnimationData& anim = animations[currentState];
+        animationTimer += deltaTime;
+
+        if (animationTimer >= anim.animationSpeed) {
+            currentFrame = std::min(currentFrame + 1, anim.totalFrames - 1);
+            animationTimer = 0.0f;
+        }
+
+        rect.x = static_cast<int>(x);
+        rect.y = static_cast<int>(y);
+        return;
+    }
+
+    // 📌 Dacă e în knockback, continuă animatia HURT și aplică deplasarea
     if (knockbackTimer > 0.0f) {
         x += knockbackSpeed * deltaTime;
         knockbackTimer -= deltaTime;
-        setState(EnemyState::HURT);
-    }
-    else if (currentState != EnemyState::DEAD && health > 0) {
-        float distance = playerX - x;
-        float absDistance = fabs(distance);
 
-        if (absDistance < ENEMY_DETECTION_RANGE) {
-            if (absDistance < ENEMY_ATTACK_RANGE) {
+        if (currentState != EnemyState::HURT) {
+            setState(EnemyState::HURT);
+        }
+
+        AnimationData& anim = animations[EnemyState::HURT];
+        animationTimer += deltaTime;
+        if (animationTimer >= anim.animationSpeed) {
+            currentFrame = (currentFrame + 1) % anim.totalFrames;
+            animationTimer = 0.0f;
+        }
+
+        rect.x = static_cast<int>(x);
+        rect.y = static_cast<int>(y);
+        return;
+    }
+
+    // 📌 Dacă atacă, termină animatia înainte de orice logică
+    if (currentState == EnemyState::ATTACK) {
+        AnimationData& anim = animations[currentState];
+        animationTimer += deltaTime;
+
+        if (animationTimer >= anim.animationSpeed) {
+            currentFrame++;
+            animationTimer = 0.0f;
+
+            if (currentFrame >= anim.totalFrames) {
+                currentFrame = 0;
+                hasDealtDamage = false;
+                setState(EnemyState::STAND);
+            }
+        }
+
+        rect.x = static_cast<int>(x);
+        rect.y = static_cast<int>(y);
+        return;
+    }
+
+    // 📌 Comportament AI: urmărire sau patrulare
+    if (absDistance < ENEMY_DETECTION_RANGE) {
+        if (absDistance < ENEMY_ATTACK_RANGE) {
+            Uint32 now = SDL_GetTicks();
+            if (now - lastAttackTime > 2000) {
                 setState(EnemyState::ATTACK);
+                currentFrame = 0;
+                animationTimer = 0.0f;
+                lastAttackTime = now;
+                hasDealtDamage = false;
             }
             else {
-                setState(EnemyState::WALK);
-                if (distance > 0) {
-                    x += ENEMY_SPEED * deltaTime;
-                    facingRight = true;
-                }
-                else {
-                    x -= ENEMY_SPEED * deltaTime;
-                    facingRight = false;
-                }
+                setState(EnemyState::STAND);
             }
         }
         else {
             setState(EnemyState::WALK);
-            if (patrolRight) {
+            if (distance > 0) {
                 x += ENEMY_SPEED * deltaTime;
-                if (x >= patrolMaxX) {
-                    x = patrolMaxX;
-                    patrolRight = false;
-                }
+                facingRight = true;
             }
             else {
                 x -= ENEMY_SPEED * deltaTime;
-                if (x <= patrolMinX) {
-                    x = patrolMinX;
-                    patrolRight = true;
-                }
+                facingRight = false;
             }
-            facingRight = patrolRight;
         }
     }
+    else {
+        setState(EnemyState::WALK);
+        if (patrolRight) {
+            x += ENEMY_SPEED * deltaTime;
+            if (x >= patrolMaxX) {
+                x = patrolMaxX;
+                patrolRight = false;
+            }
+        }
+        else {
+            x -= ENEMY_SPEED * deltaTime;
+            if (x <= patrolMinX) {
+                x = patrolMinX;
+                patrolRight = true;
+            }
+        }
+        facingRight = patrolRight;
+    }
 
+    // 📌 Animatie normală (WALK, STAND etc.)
     AnimationData& anim = animations[currentState];
     animationTimer += deltaTime;
     if (animationTimer >= anim.animationSpeed) {

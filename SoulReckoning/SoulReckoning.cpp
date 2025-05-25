@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Jucător
-    Player player(6000, 550);
+    Player player(100, 550);
     player.loadAnimations(renderer.sdlRenderer);
 
     // Platforme
@@ -114,6 +114,9 @@ int main(int argc, char* argv[]) {
 
     int playerHealth = 100;
     int score = 0;
+
+    const int DAMAGE_COOLDOWN = 3000; // ms între lovituri
+    Uint32 lastDamageTime = 0;
 
     int cameraShakeTimer = 0;     // câte frame-uri mai tremură camera
     int hitFlashTimer = 0; // câte frame-uri mai afișăm flashul
@@ -277,6 +280,35 @@ int main(int argc, char* argv[]) {
             for (auto& enemy : enemies)
                 enemy.update(deltaTime, player.x);
 
+            // Detectare coliziune player <-> inamici
+            if (!playerDead && SDL_GetTicks() - lastDamageTime > DAMAGE_COOLDOWN) {
+                SDL_Rect playerRect = player.getCollider();
+                for (auto& enemy : enemies) {
+                    if (enemy.currentState == EnemyState::ATTACK && enemy.currentFrame == 3 && !enemy.hasDealtDamage && SDL_HasIntersection(&playerRect, &enemy.rect)) {
+                        if (player.currentState == PlayerState::BLOCK) {
+                            // Efect de block (sunet, scânteie etc.)
+                        }
+                        else {
+                            playerHealth -= 20; // sau orice damage vrei
+                            hitFlashTimer = 50; // efect de damage
+                            std::cout << "Player lovit! HP: " << playerHealth << std::endl;
+
+                            if (playerHealth <= 0) {
+                                player.setState(PlayerState::DEAD);
+                                deathTime = SDL_GetTicks();
+                                playerDead = true;
+                                break;
+                            }
+                        }
+                        enemy.hasDealtDamage = true;
+                        player.knockbackSpeedX = enemy.facingRight ? 200.0f : -200.0f;
+                        player.knockbackSpeedY = -150.0f;
+                        player.knockbackDuration = 0.4f;
+                        player.beingKnockedBack = true;
+                    }
+                }
+            }
+
             // Eliminăm inamicii morți
             enemies.erase(std::remove_if(enemies.begin(), enemies.end(),
                 [](const Enemy& e) { return e.health <= 0; }), enemies.end());
@@ -351,7 +383,6 @@ int main(int argc, char* argv[]) {
                 y += 80;
             }
         }
-
         renderer.present();
     }
 

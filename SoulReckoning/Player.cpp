@@ -76,6 +76,15 @@ void Player::loadAnimations(SDL_Renderer* renderer) {
     dead.totalFrames = 3;     // o singură imagine
     dead.animationSpeed = 0.2f;
     animations[PlayerState::DEAD] = dead;
+
+    // BLOCK
+    AnimationData block;
+    block.texture = ResourceManager::getTexture(renderer, "D:\\PlatformerGame\\Character\\player_defence_one.png");
+    block.frameWidth = 100;  // ajustează dacă e altă dimensiune
+    block.frameHeight = 84;
+    block.totalFrames = 1;   // o singură poză blocată
+    block.animationSpeed = 1.0f;
+    animations[PlayerState::BLOCK] = block;
 }
 
 void Player::setState(PlayerState newState) {
@@ -95,6 +104,7 @@ void Player::handleInput(const Uint8* keystate, float deltaTime) {
     bool down = keystate[SDL_SCANCODE_DOWN];
     bool jump = keystate[SDL_SCANCODE_SPACE];
     bool attack = keystate[SDL_SCANCODE_E];
+    bool block = keystate[SDL_SCANCODE_D];
 
     if (attack && currentState != PlayerState::ATTACK) {
         setState(PlayerState::ATTACK);
@@ -123,11 +133,33 @@ void Player::handleInput(const Uint8* keystate, float deltaTime) {
     else if ((left || right) && !isJumping && !down && currentState != PlayerState::ATTACK) {
         setState(PlayerState::RUN);
     }
+    
+    if (block && currentState != PlayerState::ATTACK && currentState != PlayerState::DEAD) {
+        setState(PlayerState::BLOCK);
+        return;
+    }
 }
 
 void Player::update(float deltaTime, const std::vector<Platform>& platforms) {
-    velocityY += GRAVITY * deltaTime;
-    y += velocityY * deltaTime;
+    // Dacă e în knockback, aplică forță
+    if (beingKnockedBack) {
+        x += knockbackSpeedX * deltaTime;
+        y += knockbackSpeedY * deltaTime;
+        knockbackDuration -= deltaTime;
+
+        knockbackSpeedY += GRAVITY * deltaTime;
+
+        if (knockbackDuration <= 0.0f) {
+            beingKnockedBack = false;
+            knockbackSpeedX = 0.0f;
+            knockbackSpeedY = 0.0f;
+        }
+    }
+    else {
+        // Gravitație normală
+        velocityY += GRAVITY * deltaTime;
+        y += velocityY * deltaTime;
+    }
 
     for (const auto& p : platforms) {
         if (y + height >= p.rect.y &&

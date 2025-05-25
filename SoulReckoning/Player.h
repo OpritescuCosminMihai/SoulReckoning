@@ -16,6 +16,11 @@ public:
     bool isJumping;
     bool facingRight;
     bool attackDamageApplied;
+    // Knockback
+    float knockbackSpeedX = 0.0f;
+    float knockbackSpeedY = 0.0f;
+    float knockbackDuration = 0.0f;
+    bool beingKnockedBack = false;
 
     std::unordered_map<PlayerState, AnimationData> animations;
     PlayerState currentState;

@@ -20,6 +20,8 @@ public:
     float animationTimer;
     SDL_Rect rect;
     bool facingRight;
+    bool hasDealtDamage = false;
+    Uint32 lastAttackTime = 0;
 
     float patrolMinX, patrolMaxX;
     bool patrolRight = true;
