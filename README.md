@@ -1,46 +1,43 @@
+
 # Soul Reckoning
 
-🎮 **Soul Reckoning** is a 2D platformer game built in C++ using SDL2.
+**Soul Reckoning** este un joc 2D platformer dezvoltat în C++ cu SDL2. Jucătorul controlează un personaj cu abilități de atac, apărare și mobilitate, într-un mediu plin de inamici, capcane și platforme.
 
-## 🧠 Concept
+## Funcționalități implementate
 
-Soul Reckoning is a dark-themed action platformer where the player controls a warrior navigating a hostile world filled with floating platforms and intelligent enemies. The goal is to advance as far as possible, defeat enemies, and survive until the final boss fight.
+- **Control jucător**: deplasare stânga/dreapta, săritură, ghemuire, atac și apărare.
+- **Animații complexe** pentru stările jucătorului (stat, alergat, sărit, atac, apărare, moarte).
+- **Sistem de knockback** la primirea sau aplicarea de lovituri.
+- **Sistem de platforme** variate ca dimensiuni, cu texturi dedicate.
+- **Capcane de tip spike** care ucid instant dacă sunt atinse.
+- **Inamici AI** cu comportament de patrulare, urmărire, atac și reacții la damage.
+- **Coliziuni precise** cu platformele, inamicii și spike-urile.
+- **Sistem de scor**: primești puncte la eliminarea inamicilor.
+- **Meniu principal** și **meniu de Game Over** cu opțiuni de restart și revenire la meniu.
+- **Ecran de pauză** cu navigare și reluare.
+- **HUD dinamic** pentru viața jucătorului și scor.
+- **Efecte vizuale**: screen shake, flash roșu la damage.
 
-## ✅ Features
+## Planuri de dezvoltare viitoare
 
-- Smooth player movement: run, jump, crouch, attack
-- Enemy AI with patrol, detection, and attack behavior
-- Multi-layer parallax scrolling background
-- Score system and on-screen HUD
-- Platform collisions and animations for every state
+- Implementare **checkpoint-uri** în nivel.
+- **Boss final** cu AI și mecanici avansate.
+- **Power-ups**: boost de viteză, damage, viață etc.
+- **Sistem de viață detaliat** cu bare vizuale și sistem de vindecare.
+- **Muzică de fundal** și **efecte sonore** la acțiuni (sărituri, atacuri, moarte etc.).
+- **Niveluri multiple** și un **editor de nivel** simplu.
+- **Salvare progres** și scoruri maxime.
 
-## 🔜 Planned Features
+## Tehnologii utilizate
 
-- Player health system & Game Over screen
-- Start and end screens with scoring
-- Checkpoints and level progression
-- Sound effects and background music
-- Boss fight and unique enemies
-- Power-ups (health, damage, speed)
+- Limbaj: **C++**
+- Librării: **SDL2**, **SDL_ttf**, **SDL_image**, **SDL_mixer**
+- Organizare: programare orientată pe obiect, clase separate pentru entități și logică
 
-## 🛠️ Technologies
+## Autor
 
-- C++
-- SDL2
-- SDL_image
-- SDL_ttf
-- SDL_mixer (planned)
+Proiect realizat de **Cosmin Mihai Oprițescu** ca parte din materia **Programare Orientată pe Obiecte** (POO).
 
-## 🚀 Run Instructions
+---
 
-Currently runs from Visual Studio (Windows, 1280x720 resolution). Future releases may include a `.exe` version.
-
-## 📁 Structure
-
-- `SoulReckoning.cpp` – main game logic
-- `assets/` – images, fonts, sounds (optional)
-- `.gitignore` – excludes Visual Studio and build files
-
-## 👨‍💻 Developer
-
-Created with passion by Cosmin.
+Acest joc este în dezvoltare activă. Feedback-ul și sugestiile sunt binevenite!
