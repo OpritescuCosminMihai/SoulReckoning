@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
     }
 
     SDL_Texture* spikeTexture = nullptr;
-    // Încarcă textura pentru spike (folosește BMP sau PNG cu SDL_image)
+    // Încarcă textura pentru spike
     SDL_Surface* spikeSurface = IMG_Load("D:\\PlatformerGame\\Enemies\\spike_up.png");
     if (!spikeSurface) {
         std::cerr << "Eroare incarcare spike: " << IMG_GetError() << std::endl;
@@ -68,14 +68,15 @@ int main(int argc, char* argv[]) {
     SDL_FreeSurface(spikeSurface);
     // Spike-uri
     std::vector<Spike> spikes;
-    for (int i = 0; i < 50; ++i) {
-        spikes.emplace_back(500 + i * 40, 640, spikeTexture); // 40 = lățimea spike-ului
+    for (int i = 0; i < 130; ++i) {
+        spikes.emplace_back(400 + i * 40, 640, spikeTexture); // 40 = lățimea spike-ului
     }
 
     // Jucător
-    Player player(100, 500);
+    Player player(6000, 550);
     player.loadAnimations(renderer.sdlRenderer);
 
+    // Platforme
     SDL_Texture* platformLong = IMG_LoadTexture(renderer.sdlRenderer, "D:\\PlatformerGame\\Tiles\\platform_long.png");
     SDL_Texture* platformMedium1 = IMG_LoadTexture(renderer.sdlRenderer, "D:\\PlatformerGame\\Tiles\\platform_medium_1.png");
     SDL_Texture* platformMedium2 = IMG_LoadTexture(renderer.sdlRenderer, "D:\\PlatformerGame\\Tiles\\platform_medium_2.png");
@@ -84,33 +85,40 @@ int main(int argc, char* argv[]) {
     SDL_Texture* platformSmall2 = IMG_LoadTexture(renderer.sdlRenderer, "D:\\PlatformerGame\\Tiles\\platform_small_2.png");
     SDL_Texture* platformSmall3 = IMG_LoadTexture(renderer.sdlRenderer, "D:\\PlatformerGame\\Tiles\\platform_small_3.png");
 
-    // Platforme
     std::vector<Platform> platforms = {
     Platform(500, 560, 130, 48, platformSmall1),     // 1
-    Platform(650, 470, 91, 50, platformSmall2),      // 2
-    Platform(780, 430, 61, 35, platformSmall3),      // 3
-    Platform(880, 470, 130, 48, platformSmall1),     // 4
-    Platform(1050, 500, 225, 41, platformMedium1),   // 5
-    Platform(1300, 460, 147, 41, platformMedium3),   // 6
-    Platform(1500, 410, 91, 50, platformSmall2),     // 7
-    Platform(1630, 460, 130, 48, platformSmall1),    // 8
-    Platform(1780, 500, 177, 39, platformMedium2),   // 9
-    Platform(2000, 460, 225, 41, platformMedium1),   // 10
-    Platform(2250, 420, 130, 48, platformSmall1),    // 11
-    Platform(2400, 390, 91, 50, platformSmall2),     // 12
-    Platform(2550, 430, 61, 35, platformSmall3)      // 13
+    Platform(650, 450, 91, 50, platformSmall2),      // 2
+    Platform(1080, 470, 130, 48, platformSmall1),     // 3
+    Platform(1600, 430, 61, 35, platformSmall3),      // 4
+    Platform(2000, 500, 225, 41, platformMedium1),   // 5
+    Platform(2100, 360, 147, 41, platformMedium3),   // 6
+    Platform(2700, 410, 91, 50, platformSmall2),     // 7
+    Platform(3100, 460, 130, 48, platformSmall1),    // 8
+    Platform(3350, 320, 177, 39, platformMedium2),   // 9
+    Platform(3900, 460, 225, 41, platformMedium1),   // 10
+    Platform(4200, 340, 130, 48, platformSmall1),    // 11
+    Platform(4800, 390, 91, 50, platformSmall2),     // 12
+    Platform(5200, 430, 61, 35, platformSmall3)      // 13
     };
 
     // Inamici
     std::vector<Enemy> enemies;
 
+    enemies.emplace_back(6100, 585, ENEMY_FRAME_WIDTH, ENEMY_FRAME_HEIGHT); // aproape de platforma 5
+    enemies.emplace_back(6900, 585, ENEMY_FRAME_WIDTH, ENEMY_FRAME_HEIGHT); // înainte de platforma 9
+
+    // Pentru fiecare inamic, încarcă animațiile
+    for (auto& enemy : enemies) {
+        enemy.loadAnimations(renderer.sdlRenderer);
+    }
+
     int playerHealth = 100;
     int score = 0;
 
     int cameraShakeTimer = 0;     // câte frame-uri mai tremură camera
-    int cameraShakeStrength = 30; // câți pixeli se deplasează camera la shake
-
     int hitFlashTimer = 0; // câte frame-uri mai afișăm flashul
+
+    int cameraShakeStrength = 20; // câți pixeli se deplasează camera la shake
 
     MainMenu menu;
     menu.loadAssets(renderer.sdlRenderer);
@@ -196,7 +204,7 @@ int main(int argc, char* argv[]) {
                         }
                         else {
                             // EXIT TO MENU
-                            running = false; // sau inMenu = true + continue;
+                            running = false;
                         }
                     }
                 }
@@ -207,6 +215,12 @@ int main(int argc, char* argv[]) {
 
         renderer.clear();
         int cameraX = static_cast<int>(player.x) - SCREEN_WIDTH / 2;
+
+        if (cameraShakeTimer > 0) {
+            int offset = (rand() % (2 * cameraShakeStrength + 1)) - cameraShakeStrength;
+            cameraX += offset;
+            cameraShakeTimer--;
+        }
         background.render(renderer.sdlRenderer, cameraX, 0);
         for (auto& p : platforms) p.render(renderer.sdlRenderer, cameraX);
         for (auto& s : spikes) s.render(renderer.sdlRenderer, cameraX);
@@ -217,9 +231,55 @@ int main(int argc, char* argv[]) {
             player.handleInput(keystate, deltaTime);
             player.update(deltaTime, platforms);
 
-            // enemy logic etc. (poți adăuga aici)
+            // ATACAREA INAMICILOR
+            if (player.currentState == PlayerState::ATTACK &&
+                player.currentFrame == 1 &&  // Frame-ul unde se aplică damage
+                !player.attackDamageApplied) {
+
+                SDL_Rect hitbox = player.getAttackHitbox();
+
+                for (auto& enemy : enemies) {
+                    if (SDL_HasIntersection(&hitbox, &enemy.rect)) {
+                        enemy.health -= 20;
+                        hitFlashTimer = 50;      
+                        cameraShakeTimer = 200; 
+
+                        // Direcția jucătorului determină direcția knockback-ului
+
+                        enemy.knockbackSpeed = player.facingRight ? 100.0f : -100.0f;
+                        enemy.knockbackTimer = 1.2f; // durează 1.2 secunde
+
+                        if (enemy.health <= 0) {
+                            enemy.setState(EnemyState::DEAD);
+                        }
+                        else {
+                            enemy.setState(EnemyState::HURT);
+                        }
+
+                        player.attackDamageApplied = true; // doar o dată per atac
+                    }
+                }
+            }
+
+            if (hitFlashTimer > 0) {
+                SDL_SetRenderDrawBlendMode(renderer.sdlRenderer, SDL_BLENDMODE_BLEND);
+
+                int alpha = static_cast<int>((hitFlashTimer / 5.0f) * 100.0f);
+                SDL_SetRenderDrawColor(renderer.sdlRenderer, 255, 0, 0, alpha);
+
+                SDL_Rect flashRect = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
+                SDL_RenderFillRect(renderer.sdlRenderer, &flashRect);
+
+                hitFlashTimer--;
+            }
+
+            // enemy logic
             for (auto& enemy : enemies)
                 enemy.update(deltaTime, player.x);
+
+            // Eliminăm inamicii morți
+            enemies.erase(std::remove_if(enemies.begin(), enemies.end(),
+                [](const Enemy& e) { return e.health <= 0; }), enemies.end());
 
             // coliziune spike
             SDL_Rect playerRect = player.getCollider();

@@ -25,7 +25,7 @@ void Enemy::loadAnimations(SDL_Renderer* renderer) {
     load(EnemyState::STAND, "D:\\PlatformerGame\\Enemies\\enemy1_stand.png", 8, 0.13f);
     load(EnemyState::WALK, "D:\\PlatformerGame\\Enemies\\enemy1_walk.png", 8, 0.13f);
     load(EnemyState::ATTACK, "D:\\PlatformerGame\\Enemies\\enemy1_attack.png", 6, 0.17f);
-    load(EnemyState::HURT, "D:\\PlatformerGame\\Enemies\\enemy1_hurt.png", 6, 0.17f);
+    load(EnemyState::HURT, "D:\\PlatformerGame\\Enemies\\enemy1_hurt.png", 6, 0.2f);
     load(EnemyState::DEAD, "D:\\PlatformerGame\\Enemies\\enemy1_dead.png", 7, 0.14f);
 }
 
@@ -38,10 +38,15 @@ void Enemy::setState(EnemyState newState) {
 }
 
 void Enemy::update(float deltaTime, float playerX) {
-    float distance = playerX - x;
-    float absDistance = fabs(distance);
+    if (knockbackTimer > 0.0f) {
+        x += knockbackSpeed * deltaTime;
+        knockbackTimer -= deltaTime;
+        setState(EnemyState::HURT);
+    }
+    else if (currentState != EnemyState::DEAD && health > 0) {
+        float distance = playerX - x;
+        float absDistance = fabs(distance);
 
-    if (currentState != EnemyState::DEAD && health > 0) {
         if (absDistance < ENEMY_DETECTION_RANGE) {
             if (absDistance < ENEMY_ATTACK_RANGE) {
                 setState(EnemyState::ATTACK);
@@ -90,6 +95,9 @@ void Enemy::update(float deltaTime, float playerX) {
 }
 
 void Enemy::render(SDL_Renderer* renderer, int cameraX) {
+    rect.x = static_cast<int>(x);
+    rect.y = static_cast<int>(y);
+
     AnimationData& anim = animations[currentState];
     if (!anim.texture) {
         SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);

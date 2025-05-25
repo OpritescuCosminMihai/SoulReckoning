@@ -10,6 +10,8 @@
 class Enemy {
 public:
     float x, y;
+    float knockbackSpeed = 0.0f;
+    float knockbackTimer = 0.0f;
     int width, height;
     int health;
     EnemyState currentState;
