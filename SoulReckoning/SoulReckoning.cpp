@@ -17,7 +17,7 @@
 
 int main(int argc, char* argv[]) {
     Renderer renderer;
-    if (!renderer.init()) return -1;
+    if (!renderer.init()) return -1;// Inițializează SDL și rendererul
 
     // Font pentru HUD
     TTF_Font* font = TTF_OpenFont("D:\\PlatformerGame\\Fonts\\PressStart2P-Regular.ttf", 24);
@@ -25,18 +25,20 @@ int main(int argc, char* argv[]) {
         std::cerr << "Eroare font: " << TTF_GetError() << std::endl;
         return -1;
     }
+    // Font pentru titlul din meniu
     TTF_Font* titleFont = TTF_OpenFont("D:\\PlatformerGame\\Fonts\\JAPAN-Bold-Italic.ttf", 60); // pentru logo
     if (!titleFont) {
         std::cerr << "Eroare font: " << TTF_GetError() << std::endl;
         return -1;
     }
+    // Font pentru opțiunile din meniu
     TTF_Font* optionsFont = TTF_OpenFont("D:\\PlatformerGame\\Fonts\\JAPAN-Italic.ttf", 40); // pentru butoane
     if (!optionsFont) {
         std::cerr << "Eroare font: " << TTF_GetError() << std::endl;
         return -1;
     }
 
-    // Fundal parallax
+    // Inițializează fundalul parallax cu layere multiple și factori diferiți
     MultiLayerBackground background;
     std::vector<std::string> bgPaths = {
         "D:\\PlatformerGame\\Backgrounds\\Layer_0011_0.png",
@@ -57,8 +59,8 @@ int main(int argc, char* argv[]) {
         std::cerr << "Eroare fundal." << std::endl;
     }
 
+    // Încarcă textura pentru spike-uri
     SDL_Texture* spikeTexture = nullptr;
-    // Încarcă textura pentru spike
     SDL_Surface* spikeSurface = IMG_Load("D:\\PlatformerGame\\Enemies\\spike_up.png");
     if (!spikeSurface) {
         std::cerr << "Eroare incarcare spike: " << IMG_GetError() << std::endl;
@@ -66,17 +68,18 @@ int main(int argc, char* argv[]) {
     }
     spikeTexture = SDL_CreateTextureFromSurface(renderer.sdlRenderer, spikeSurface);
     SDL_FreeSurface(spikeSurface);
-    // Spike-uri
+    
+    // Creează mai multe spike-uri aliniate
     std::vector<Spike> spikes;
     for (int i = 0; i < 130; ++i) {
         spikes.emplace_back(400 + i * 40, 640, spikeTexture); // 40 = lățimea spike-ului
     }
 
-    // Jucător
+    // Creează jucătorul și încarcă animațiile
     Player player(100, 550);
     player.loadAnimations(renderer.sdlRenderer);
 
-    // Platforme
+    // Încarcă texturi pentru platforme
     SDL_Texture* platformLong = IMG_LoadTexture(renderer.sdlRenderer, "D:\\PlatformerGame\\Tiles\\platform_long.png");
     SDL_Texture* platformMedium1 = IMG_LoadTexture(renderer.sdlRenderer, "D:\\PlatformerGame\\Tiles\\platform_medium_1.png");
     SDL_Texture* platformMedium2 = IMG_LoadTexture(renderer.sdlRenderer, "D:\\PlatformerGame\\Tiles\\platform_medium_2.png");
@@ -85,6 +88,7 @@ int main(int argc, char* argv[]) {
     SDL_Texture* platformSmall2 = IMG_LoadTexture(renderer.sdlRenderer, "D:\\PlatformerGame\\Tiles\\platform_small_2.png");
     SDL_Texture* platformSmall3 = IMG_LoadTexture(renderer.sdlRenderer, "D:\\PlatformerGame\\Tiles\\platform_small_3.png");
 
+    // Creează platformele din joc
     std::vector<Platform> platforms = {
     Platform(500, 560, 130, 48, platformSmall1),     // 1
     Platform(650, 450, 91, 50, platformSmall2),      // 2
@@ -101,7 +105,7 @@ int main(int argc, char* argv[]) {
     Platform(5200, 430, 61, 35, platformSmall3)      // 13
     };
 
-    // Inamici
+    // Creează inamicii
     std::vector<Enemy> enemies;
 
     enemies.emplace_back(6100, 585, ENEMY_FRAME_WIDTH, ENEMY_FRAME_HEIGHT); // aproape de platforma 5
@@ -112,17 +116,16 @@ int main(int argc, char* argv[]) {
         enemy.loadAnimations(renderer.sdlRenderer);
     }
 
+    // Variabile pentru starea jocului
     int playerHealth = 100;
     int score = 0;
-
     const int DAMAGE_COOLDOWN = 3000; // ms între lovituri
     Uint32 lastDamageTime = 0;
-
     int cameraShakeTimer = 0;     // câte frame-uri mai tremură camera
     int hitFlashTimer = 0; // câte frame-uri mai afișăm flashul
-
     int cameraShakeStrength = 20; // câți pixeli se deplasează camera la shake
 
+    // Meniu principal
     MainMenu menu;
     menu.loadAssets(renderer.sdlRenderer);
     bool inMenu = true;
@@ -131,6 +134,7 @@ int main(int argc, char* argv[]) {
 
     Uint32 lastTime = SDL_GetTicks();
 
+    // Loop pentru meniul principal
     while (inMenu) {
         Uint32 currentTime = SDL_GetTicks();
         float deltaTime = (currentTime - lastTime) / 1000.0f;
@@ -157,14 +161,12 @@ int main(int argc, char* argv[]) {
         renderer.present();
     }
 
-    // Main loop
+    // ---------------------- Main Game Loop ----------------------
     bool running = true;
     bool isPaused = false;
-
     bool playerDead = false;
     Uint32 deathTime = 0;
     int deathMenuSelection = 0;
-
     int pauseSelected = 0; // 0 = Resume, 1 = Exit
     SDL_Event event;
 
@@ -176,12 +178,15 @@ int main(int argc, char* argv[]) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) running = false;
 
+            // Control ESC pentru pauză
             if (!playerDead && event.type == SDL_KEYDOWN) {
                 if (event.key.keysym.sym == SDLK_ESCAPE) {
                     isPaused = !isPaused;
                 }
 
                 if (isPaused) {
+
+                    // Navigare în meniu de pauză
                     if (event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_DOWN) {
                         pauseSelected = 1 - pauseSelected;
                     }
@@ -192,6 +197,7 @@ int main(int argc, char* argv[]) {
                 }
             }
 
+            // Control meniu după moarte
             if (playerDead && SDL_GetTicks() - deathTime > 1000) {
                 if (event.type == SDL_KEYDOWN) {
                     if (event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_DOWN)
@@ -217,19 +223,26 @@ int main(int argc, char* argv[]) {
         // ------------------ ACTUALIZARE + RANDARE ------------------
 
         renderer.clear();
+
+        // Poziția camerei în funcție de jucător
         int cameraX = static_cast<int>(player.x) - SCREEN_WIDTH / 2;
 
+        // Efect de tremurare a camerei
         if (cameraShakeTimer > 0) {
             int offset = (rand() % (2 * cameraShakeStrength + 1)) - cameraShakeStrength;
             cameraX += offset;
             cameraShakeTimer--;
         }
+
+        // Randare fundal, platforme, spike-uri, inamici
         background.render(renderer.sdlRenderer, cameraX, 0);
         for (auto& p : platforms) p.render(renderer.sdlRenderer, cameraX);
         for (auto& s : spikes) s.render(renderer.sdlRenderer, cameraX);
         for (auto& e : enemies) e.render(renderer.sdlRenderer, cameraX);
 
         if (!isPaused && !playerDead) {
+
+            // Input și update jucător
             const Uint8* keystate = SDL_GetKeyboardState(NULL);
             player.handleInput(keystate, deltaTime);
             player.update(deltaTime, platforms);
@@ -264,6 +277,7 @@ int main(int argc, char* argv[]) {
                 }
             }
 
+            // Flash de lovitură
             if (hitFlashTimer > 0) {
                 SDL_SetRenderDrawBlendMode(renderer.sdlRenderer, SDL_BLENDMODE_BLEND);
 
@@ -276,7 +290,7 @@ int main(int argc, char* argv[]) {
                 hitFlashTimer--;
             }
 
-            // enemy logic
+            // Update logică inamici
             for (auto& enemy : enemies)
                 enemy.update(deltaTime, player.x);
 
@@ -289,8 +303,8 @@ int main(int argc, char* argv[]) {
                             // Efect de block (sunet, scânteie etc.)
                         }
                         else {
-                            playerHealth -= 20; // sau orice damage vrei
-                            hitFlashTimer = 50; // efect de damage
+                            playerHealth -= 20;
+                            hitFlashTimer = 50;
                             std::cout << "Player lovit! HP: " << playerHealth << std::endl;
 
                             if (playerHealth <= 0) {
@@ -309,11 +323,11 @@ int main(int argc, char* argv[]) {
                 }
             }
 
-            // Eliminăm inamicii morți
+            // Șterge inamicii morți
             enemies.erase(std::remove_if(enemies.begin(), enemies.end(),
                 [](const Enemy& e) { return e.health <= 0; }), enemies.end());
 
-            // coliziune spike
+            // Coliziune jucător - spike
             SDL_Rect playerRect = player.getCollider();
             for (auto& spike : spikes) {
                 SDL_Rect spikeRect = spike.getCollider();
@@ -325,20 +339,25 @@ int main(int argc, char* argv[]) {
                 }
             }
 
+            // Randare jucător și HUD
             player.render(renderer.sdlRenderer, cameraX);
             renderHUD(renderer.sdlRenderer, font, playerHealth, score);
         }
 
+        // Dacă jucătorul a murit
         else if (playerDead) {
-            player.update(deltaTime, platforms); // lasă animatia să ruleze
+            player.update(deltaTime, platforms);
             player.render(renderer.sdlRenderer, cameraX);
 
             if (SDL_GetTicks() - deathTime > 1000) {
+
+                // Ecran semi-transparent + text "YOU DIED"
                 SDL_SetRenderDrawBlendMode(renderer.sdlRenderer, SDL_BLENDMODE_BLEND);
                 SDL_SetRenderDrawColor(renderer.sdlRenderer, 0, 0, 0, 180);
                 SDL_Rect overlay = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
                 SDL_RenderFillRect(renderer.sdlRenderer, &overlay);
 
+                // Text și opțiuni "RESTART" / "EXIT"
                 SDL_Surface* title = TTF_RenderText_Solid(font, "YOU DIED", { 255, 0, 0 });
                 SDL_Texture* titleTex = SDL_CreateTextureFromSurface(renderer.sdlRenderer, title);
                 int textW, textH;
@@ -362,12 +381,14 @@ int main(int argc, char* argv[]) {
             }
         }
 
+        // Dacă jocul e în pauză
         else if (isPaused) {
             SDL_SetRenderDrawBlendMode(renderer.sdlRenderer, SDL_BLENDMODE_BLEND);
             SDL_SetRenderDrawColor(renderer.sdlRenderer, 0, 0, 0, 160);
             SDL_Rect overlay = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
             SDL_RenderFillRect(renderer.sdlRenderer, &overlay);
 
+            // Afișează opțiunile "Resume" și "Exit to Menu"
             const char* options[2] = { "Resume", "Exit to Menu" };
             int y = 250;
             for (int i = 0; i < 2; ++i) {
@@ -383,9 +404,10 @@ int main(int argc, char* argv[]) {
                 y += 80;
             }
         }
-        renderer.present();
+        renderer.present();// Afișează frame-ul curent pe ecran
     }
 
+    // Eliberare resurse la închidere
     background.free();
     TTF_CloseFont(font);
     TTF_CloseFont(titleFont);
